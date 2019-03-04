@@ -489,6 +489,12 @@ func doApi(resA http.ResponseWriter, reqA *http.Request) string {
 			return fmt.Sprintf("failed: %v", rs)
 		}
 
+		withLinkT := getFormValueWithDefaultValue(reqA, "link", "")
+
+		if withLinkT != "" {
+			return "saved, share link: " + reqA.RequestURI + "___" + reqA.URL.Host
+		}
+
 		return "saved"
 	case "load", "get":
 		codeT := getFormValueWithDefaultValue(reqA, "code", "")
