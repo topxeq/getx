@@ -424,8 +424,10 @@ func HttpHandler(w http.ResponseWriter, reqA *http.Request) {
 	textT := ""
 	resultT := ""
 
+	// fmt.Printf("req: %#v, code: %v\n", reqT, codeT)
+
 	switch reqT {
-	case "load":
+	case "load", "get", "share":
 		codeT = strings.TrimSpace(getFormValueWithDefaultValue(reqA, "code", ""))
 
 		if codeT == "" {
@@ -445,7 +447,7 @@ func HttpHandler(w http.ResponseWriter, reqA *http.Request) {
 		textT = rs
 		resultT = ""
 
-	case "save":
+	case "save", "set":
 		codeT = strings.TrimSpace(getFormValueWithDefaultValue(reqA, "code", ""))
 
 		if codeT == "" {
@@ -477,8 +479,9 @@ func HttpHandler(w http.ResponseWriter, reqA *http.Request) {
 		}
 
 		linkT := "http://" + reqA.Host + "/share/" + codeT
+		linkWebT := "http://" + reqA.Host + "/?req=get&code=" + codeT
 
-		resultT = `share link: <a target="_blank" href="` + linkT + `">` + linkT + `</a>`
+		resultT = `share link: <a target="_blank" href="` + linkT + `">` + `share by plain text` + `</a><br /><a target="_blank" href="` + linkWebT + `">` + `share by WEB page` + `</a>`
 
 	}
 
