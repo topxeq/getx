@@ -745,7 +745,7 @@ func runCmd(cmdLineA []string) {
 		return
 	}
 
-	fmt.Printf("base path: %v\n", basePathG)
+	// fmt.Printf("base path: %v\n", basePathG)
 
 	switch cmdT {
 	case "version":
@@ -762,74 +762,12 @@ func runCmd(cmdLineA []string) {
 		if err != nil {
 			logWithTime("Service \"%s\" failed to run.", (*s).String())
 		}
-	case "get":
-		codeT := getSwitchWithDefaultValue(cmdLineA, "-code=", "")
+	case "get", "load":
+		codeT := getSwitchWithDefaultValue(cmdLineA, "-code=", "public")
 
-		var ok bool
+		currentPortG := getSwitchWithDefaultValue(cmdLineA, "-port=", "7468")
 
-		var fileMapT map[string]string = nil
-
-		if codeT == "" {
-			if fileMapT == nil {
-				fileMapT = loadMapFromFile(filepath.Join(basePathG, defaultConfigFileNameG))
-			}
-
-			if fileMapT == nil {
-				fmt.Printf("invalid code: %v", codeT)
-				return
-			}
-
-			codeT, ok = fileMapT["code"]
-
-			if !ok {
-				fmt.Printf("invalid code: %v", codeT)
-				return
-			}
-		}
-
-		var currentPortG = ""
-
-		portT := getSwitchWithDefaultValue(cmdLineA, "-port=", "")
-
-		if portT == "" {
-			if fileMapT == nil {
-				fileMapT = loadMapFromFile(filepath.Join(basePathG, defaultConfigFileNameG))
-			}
-
-			if fileMapT == nil {
-				currentPortG = defaultPortG
-			} else {
-				currentPortG, ok = fileMapT["port"]
-
-				if !ok {
-					currentPortG = defaultPortG
-				}
-			}
-
-		} else {
-			currentPortG = portT
-		}
-
-		serverUrlG = getSwitchWithDefaultValue(cmdLineA, "-server=", "")
-
-		if serverUrlG == "" {
-			if fileMapT == nil {
-				fileMapT = loadMapFromFile(filepath.Join(basePathG, defaultConfigFileNameG))
-			}
-
-			if fileMapT == nil {
-				fmt.Printf("invalid server url, no confilg file %v", filepath.Join(basePathG, defaultConfigFileNameG))
-				return
-			}
-
-			serverUrlG, ok = fileMapT["server"]
-
-			if !ok {
-				fmt.Printf("invalid server url: %v", serverUrlG)
-				return
-			}
-
-		}
+		serverUrlG = getSwitchWithDefaultValue(cmdLineA, "-server=", "getx.topget.org")
 
 		if !strings.HasPrefix(strings.ToLower(serverUrlG), "http") {
 			serverUrlG = fmt.Sprintf("http://%v:%v/api", serverUrlG, currentPortG)
@@ -841,104 +779,47 @@ func runCmd(cmdLineA []string) {
 
 		postT := url.Values{}
 
-		postT.Set("req", "getClip")
+		postT.Set("req", "get")
 		postT.Set("code", codeT)
 
 		rs := downloadUtf8Page(serverUrlG, postT, 15)
 
-		addLineEndFlagT := ifSwitchExists(cmdLineA, "-withLineEnd") || ifSwitchExists(cmdLineA, "-L") || ifSwitchExists(cmdLineA, "-l")
+		noLineEndFlagT := ifSwitchExists(cmdLineA, "-noLineEnd") || ifSwitchExists(cmdLineA, "-nl") || ifSwitchExists(cmdLineA, "-NL")
 
-		if addLineEndFlagT {
-			fmt.Println(rs)
-		} else {
+		if noLineEndFlagT {
 			fmt.Print(rs)
+		} else {
+			fmt.Println(rs)
 		}
 
-		clipboard.WriteAll(rs)
+		ifClipT := ifSwitchExists(cmdLineA, "-clip")
 
-		saveString(rs, filepath.Join(basePathG, defaultClipFileNameG))
+		if ifClipT {
+			clipboard.WriteAll(rs)
+		}
 
 	case "save", "set":
-		codeT := getSwitchWithDefaultValue(cmdLineA, "-code=", "")
+		codeT := getSwitchWithDefaultValue(cmdLineA, "-code=", "public")
 
-		var ok bool
+		currentPortG := getSwitchWithDefaultValue(cmdLineA, "-port=", "7468")
 
-		var fileMapT map[string]string = nil
-
-		if codeT == "" {
-			if fileMapT == nil {
-				fileMapT = loadMapFromFile(filepath.Join(basePathG, defaultConfigFileNameG))
-			}
-
-			if fileMapT == nil {
-				fmt.Printf("invalid code: %v", codeT)
-				return
-			}
-
-			codeT, ok = fileMapT["code"]
-
-			if !ok {
-				fmt.Printf("invalid code: %v", codeT)
-				return
-			}
-		}
-
-		var currentPortG = ""
-
-		portT := getSwitchWithDefaultValue(cmdLineA, "-port=", "")
-
-		if portT == "" {
-			if fileMapT == nil {
-				fileMapT = loadMapFromFile(filepath.Join(basePathG, defaultConfigFileNameG))
-			}
-
-			if fileMapT == nil {
-				currentPortG = defaultPortG
-			} else {
-				currentPortG, ok = fileMapT["port"]
-
-				if !ok {
-					currentPortG = defaultPortG
-				}
-			}
-
-		} else {
-			currentPortG = portT
-		}
-
-		serverUrlG = getSwitchWithDefaultValue(cmdLineA, "-server=", "")
-
-		if serverUrlG == "" {
-			if fileMapT == nil {
-				fileMapT = loadMapFromFile(filepath.Join(basePathG, defaultConfigFileNameG))
-			}
-
-			if fileMapT == nil {
-				fmt.Printf("invalid server url, no confilg file %v", filepath.Join(basePathG, defaultConfigFileNameG))
-				return
-			}
-
-			serverUrlG, ok = fileMapT["server"]
-
-			if !ok {
-				fmt.Printf("invalid server url: %v", serverUrlG)
-				return
-			}
-
-		}
+		serverUrlG = getSwitchWithDefaultValue(cmdLineA, "-server=", "getx.topget.org")
 
 		if !strings.HasPrefix(strings.ToLower(serverUrlG), "http") {
 			serverUrlG = fmt.Sprintf("http://%v:%v/api", serverUrlG, currentPortG)
 		}
 
 		var textT string
+		var ok bool
 		var err error
 
 		if ifSwitchExists(cmdLineA, "-file") {
-			textT, ok = loadString(filepath.Join(basePathG, defaultClipFileNameG))
+			fileNameT := getSwitchWithDefaultValue(cmdLineA, "-file=", "")
+
+			textT, ok = loadString(fileNameT)
 
 			if !ok {
-				fmt.Printf("failed to load content from clip file")
+				fmt.Printf("failed to load content from file")
 				return
 			}
 		} else if textT = getSwitchWithDefaultValue(cmdLineA, "-text=", ""); textT != "" {
@@ -954,13 +835,19 @@ func runCmd(cmdLineA []string) {
 
 		postT := url.Values{}
 
-		postT.Set("req", "saveClip")
+		postT.Set("req", "save")
 		postT.Set("code", codeT)
 		postT.Set("text", textT)
 
 		rs := downloadUtf8Page(serverUrlG, postT, 15)
 
-		fmt.Print(rs)
+		noLineEndFlagT := ifSwitchExists(cmdLineA, "-noLineEnd") || ifSwitchExists(cmdLineA, "-nl") || ifSwitchExists(cmdLineA, "-NL")
+
+		if noLineEndFlagT {
+			fmt.Print(rs)
+		} else {
+			fmt.Println(rs)
+		}
 
 	case "installonly":
 		s := initSvc()
