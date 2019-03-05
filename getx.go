@@ -691,9 +691,9 @@ func Svc() {
 
 func initSvc() *service.Service {
 	svcConfigT := &service.Config{
-		Name:        "txClipSvc",
-		DisplayName: "txClipSvc",
-		Description: "Clipboard service by TopXeQ V" + versionG,
+		Name:        "getxSvc",
+		DisplayName: "getxSvc",
+		Description: "getx service by TopXeQ V" + versionG,
 	}
 
 	prgT := &program{BasePath: basePathG}
@@ -749,7 +749,7 @@ func runCmd(cmdLineA []string) {
 
 	switch cmdT {
 	case "version":
-		fmt.Printf("txClipSvc V%v", versionG)
+		fmt.Printf("getx V%v", versionG)
 	case "", "run":
 		s := initSvc()
 
