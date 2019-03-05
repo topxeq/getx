@@ -411,11 +411,91 @@ func stopWork() {
 	exit <- struct{}{}
 }
 
-func HttpHandler(w http.ResponseWriter, req *http.Request) {
-	w.Header().Set("Content-Type", "text/plain")
-	w.Write([]byte("This is an example server.\n"))
+var htmlTemplateG = ``
+
+func HttpHandler(w http.ResponseWriter, reqA *http.Request) {
+	reqA.ParseForm()
+
+	fmt.Printf("%#v\n", reqA.Form)
+
+	reqT := strings.ToLower(getFormValueWithDefaultValue(reqA, "req", ""))
+
+	codeT := ""
+	textT := ""
+	resultT := ""
+
+	switch reqT {
+	case "load":
+		codeT = strings.TrimSpace(getFormValueWithDefaultValue(reqA, "code", ""))
+
+		if codeT == "" {
+			textT = ""
+			resultT = fmt.Sprintf(`<span style="color: red;">failed: %v</span>`, `empty code`)
+			break
+		}
+
+		rs, ok := loadString(filepath.Join(dataPathG, DecodeStringSimple(codeT)+".txt"))
+
+		if !ok {
+			textT = ""
+			resultT = fmt.Sprintf(`<span style="color: red;">failed: %v</span>`, rs)
+			break
+		}
+
+		textT = rs
+		resultT = ""
+
+	case "save":
+		codeT = strings.TrimSpace(getFormValueWithDefaultValue(reqA, "code", ""))
+
+		if codeT == "" {
+			textT = ""
+			resultT = fmt.Sprintf(`<span style="color: red;">failed: %v</span>`, `empty code`)
+			break
+		}
+
+		textT = getFormValueWithDefaultValue(reqA, "text", "")
+
+		if textT == "" {
+			textT = ""
+			resultT = fmt.Sprintf(`<span style="color: red;">failed: %v</span>`, `empty content`)
+			break
+		}
+
+		if len(textT) > maxClipSizeG {
+			textT = ""
+			resultT = fmt.Sprintf(`<span style="color: red;">failed: %v</span>`, `content exceeds the size limit`)
+			break
+		}
+
+		rs := saveString(textT, filepath.Join(dataPathG, EncodeStringSimple(codeT)+".txt"))
+
+		if rs != "" {
+			textT = ""
+			resultT = fmt.Sprintf(`<span style="color: red;">failed: %v</span>`, rs)
+			break
+		}
+
+		linkT := "http://" + reqA.Host + "/share/" + codeT
+
+		resultT = `share link: <a target="_blank" href="` + linkT + `">` + linkT + `</a>`
+
+	}
+
+	w.Header().Set("Content-Type", "text/html;charset=utf-8")
+
+	if true { //htmlTemplateG == "" {
+		htmlTemplateG, _ = loadString(filepath.Join(basePathG, "htmltmpl.html"))
+	}
+
+	strT := strings.Replace(htmlTemplateG, "{{.CODE}}", codeT, -1)
+	strT = strings.Replace(strT, "{{.TEXT}}", textT, -1)
+	strT = strings.Replace(strT, "{{.RESULTMSG}}", resultT, -1)
+
+	w.Write([]byte(strT))
 	// fmt.Fprintf(w, "This is an example server.\n")
 	// io.WriteString(w, "This is an example server.\n")
+
 }
 
 func shareHandler(w http.ResponseWriter, req *http.Request) {
@@ -492,7 +572,7 @@ func doApi(resA http.ResponseWriter, reqA *http.Request) string {
 		withLinkT := getFormValueWithDefaultValue(reqA, "link", "")
 
 		if withLinkT != "" {
-			return "saved, share link: " + reqA.RequestURI + "___" + reqA.URL.Host
+			return "saved, share link: http://" + reqA.Host + "/share/" + codeT
 		}
 
 		return "saved"
@@ -520,10 +600,10 @@ func doApi(resA http.ResponseWriter, reqA *http.Request) string {
 func startHttpServer(portA string) {
 	logWithTime("starting http server on port %v...", portA)
 	// logWithTime("https port: %v", portA)
-	// http.HandleFunc("/", HttpHandler)
 	http.HandleFunc("/api", HttpApiHandler)
 	http.HandleFunc("/share/", shareHandler)
 
+	http.HandleFunc("/", HttpHandler)
 	// s := &http.Server{
 	// 	Addr:           ":"+portA,
 	// 	Handler:        HttpApiHandler,
