@@ -436,7 +436,7 @@ func HttpHandler(w http.ResponseWriter, reqA *http.Request) {
 			break
 		}
 
-		rs, ok := loadString(filepath.Join(dataPathG, DecodeStringSimple(codeT)+".txt"))
+		rs, ok := loadString(filepath.Join(dataPathG, EncodeStringSimple(codeT)+".txt"))
 
 		if !ok {
 			textT = ""
@@ -456,11 +456,11 @@ func HttpHandler(w http.ResponseWriter, reqA *http.Request) {
 			break
 		}
 
-		if strings.ContainsAny(codeT, "./\\ \n\r") {
-			textT = ""
-			resultT = fmt.Sprintf(`<span style="color: red;">failed: %v</span>`, `invalid character(s) in code`)
-			break
-		}
+		// if strings.ContainsAny(codeT, "./\\ \n\r") {
+		// 	textT = ""
+		// 	resultT = fmt.Sprintf(`<span style="color: red;">failed: %v</span>`, `invalid character(s) in code`)
+		// 	break
+		// }
 
 		textT = getFormValueWithDefaultValue(reqA, "text", "")
 
@@ -523,7 +523,7 @@ func shareHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	rs, err := loadString(filepath.Join(dataPathG, DecodeStringSimple(codeT)+".txt"))
+	rs, err := loadString(filepath.Join(dataPathG, EncodeStringSimple(codeT)+".txt"))
 
 	if !err {
 		rs = fmt.Sprintf("failed: %v", rs)
@@ -562,9 +562,9 @@ func doApi(resA http.ResponseWriter, reqA *http.Request) string {
 			return "invalid code"
 		}
 
-		if strings.ContainsAny(codeT, "./\\ \n\r") {
-			return `invalid character(s) in code`
-		}
+		// if strings.ContainsAny(codeT, "./\\ \n\r") {
+		// 	return `invalid character(s) in code`
+		// }
 
 		textT := getFormValueWithDefaultValue(reqA, "text", "")
 
@@ -596,7 +596,7 @@ func doApi(resA http.ResponseWriter, reqA *http.Request) string {
 			return "invalid code"
 		}
 
-		rs, err := loadString(filepath.Join(dataPathG, DecodeStringSimple(codeT)+".txt"))
+		rs, err := loadString(filepath.Join(dataPathG, EncodeStringSimple(codeT)+".txt"))
 
 		if !err {
 			return fmt.Sprintf("failed: %v", rs)
@@ -831,10 +831,10 @@ func runCmd(cmdLineA []string) {
 			return
 		}
 
-		if strings.ContainsAny(codeT, "./\\ \n\r") {
-			fmt.Printf(`invalid character(s) in code`)
-			return
-		}
+		// if strings.ContainsAny(codeT, "./\\ \n\r") {
+		// 	fmt.Printf(`invalid character(s) in code`)
+		// 	return
+		// }
 
 		currentPortG := getSwitchWithDefaultValue(cmdLineA, "-port=", "7468")
 
