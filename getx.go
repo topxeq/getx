@@ -17,7 +17,7 @@ import (
 	"github.com/kardianos/service"
 )
 
-var versionG string = "0.93a"
+var versionG string = "0.95a"
 
 var defaultPortG string = "7468"
 var defaultBasePathG string
@@ -787,18 +787,30 @@ func runCmd(cmdLineA []string) {
 
 		rs := downloadUtf8Page(serverUrlG, postT, 15)
 
+		ifClipT := ifSwitchExists(cmdLineA, "-clip")
+
+		if ifClipT {
+			clipboard.WriteAll(rs)
+		}
+
+		saveFileT := getSwitchWithDefaultValue(cmdLineA, "-file=", "")
+
+		if saveFileT != "" {
+			errStrT := saveString(rs, saveFileT)
+
+			if errStrT != "" {
+				fmt.Printf("failed to save file (%v): %v", saveFileT, errStrT)
+			}
+
+			break
+		}
+
 		noLineEndFlagT := ifSwitchExists(cmdLineA, "-noLineEnd") || ifSwitchExists(cmdLineA, "-nl") || ifSwitchExists(cmdLineA, "-NL")
 
 		if noLineEndFlagT {
 			fmt.Print(rs)
 		} else {
 			fmt.Println(rs)
-		}
-
-		ifClipT := ifSwitchExists(cmdLineA, "-clip")
-
-		if ifClipT {
-			clipboard.WriteAll(rs)
 		}
 
 	case "save", "set":
@@ -816,8 +828,7 @@ func runCmd(cmdLineA []string) {
 		var ok bool
 		var err error
 
-		if ifSwitchExists(cmdLineA, "-file") {
-			fileNameT := getSwitchWithDefaultValue(cmdLineA, "-file=", "")
+		if fileNameT := getSwitchWithDefaultValue(cmdLineA, "-file=", ""); fileNameT != "" {
 
 			textT, ok = loadString(fileNameT)
 
