@@ -456,6 +456,12 @@ func HttpHandler(w http.ResponseWriter, reqA *http.Request) {
 			break
 		}
 
+		if strings.ContainsAny(codeT, "./\\ \n\r") {
+			textT = ""
+			resultT = fmt.Sprintf(`<span style="color: red;">failed: %v</span>`, `invalid character(s) in code`)
+			break
+		}
+
 		textT = getFormValueWithDefaultValue(reqA, "text", "")
 
 		if textT == "" {
@@ -550,10 +556,14 @@ func doApi(resA http.ResponseWriter, reqA *http.Request) string {
 	case "showstatus", "status":
 		return fmt.Sprintf("getx V%v, os: %v, basePathG: %v, dataPathG: %v", versionG, runtime.GOOS, basePathG, dataPathG)
 	case "save", "set":
-		codeT := getFormValueWithDefaultValue(reqA, "code", "")
+		codeT := strings.TrimSpace(getFormValueWithDefaultValue(reqA, "code", ""))
 
-		if strings.TrimSpace(codeT) == "" {
+		if codeT == "" {
 			return "invalid code"
+		}
+
+		if strings.ContainsAny(codeT, "./\\ \n\r") {
+			return `invalid character(s) in code`
 		}
 
 		textT := getFormValueWithDefaultValue(reqA, "text", "")
@@ -814,7 +824,17 @@ func runCmd(cmdLineA []string) {
 		}
 
 	case "save", "set":
-		codeT := getSwitchWithDefaultValue(cmdLineA, "-code=", "public")
+		codeT := strings.TrimSpace(getSwitchWithDefaultValue(cmdLineA, "-code=", "public"))
+
+		if codeT == "" {
+			fmt.Printf(`empty code`)
+			return
+		}
+
+		if strings.ContainsAny(codeT, "./\\ \n\r") {
+			fmt.Printf(`invalid character(s) in code`)
+			return
+		}
 
 		currentPortG := getSwitchWithDefaultValue(cmdLineA, "-port=", "7468")
 
