@@ -28,7 +28,7 @@ var clipMapG map[string]string = nil
 var clipMapLockG sync.Mutex
 
 var maxClipCountG int = 100 + 1
-var maxClipSizeG int = 8000
+var maxClipSizeG int = 32768
 
 var basePathG string = ""
 var dataPathG string = ""
@@ -456,11 +456,11 @@ func HttpHandler(w http.ResponseWriter, reqA *http.Request) {
 			break
 		}
 
-		// if strings.ContainsAny(codeT, "./\\ \n\r") {
-		// 	textT = ""
-		// 	resultT = fmt.Sprintf(`<span style="color: red;">failed: %v</span>`, `invalid character(s) in code`)
-		// 	break
-		// }
+		if strings.ContainsAny(codeT, ".:&=/\\ \n\r") {
+			textT = ""
+			resultT = fmt.Sprintf(`<span style="color: red;">failed: %v</span>`, `invalid character(s) in code`)
+			break
+		}
 
 		textT = getFormValueWithDefaultValue(reqA, "text", "")
 
@@ -471,8 +471,9 @@ func HttpHandler(w http.ResponseWriter, reqA *http.Request) {
 		}
 
 		if len(textT) > maxClipSizeG {
+			lenT := len(textT)
 			textT = ""
-			resultT = fmt.Sprintf(`<span style="color: red;">failed: %v</span>`, `content exceeds the size limit`)
+			resultT = fmt.Sprintf(`<span style="color: red;">failed: %v(%v/%v)</span>`, `content exceeds the size limit`, lenT, maxClipSizeG)
 			break
 		}
 
@@ -562,9 +563,9 @@ func doApi(resA http.ResponseWriter, reqA *http.Request) string {
 			return "invalid code"
 		}
 
-		// if strings.ContainsAny(codeT, "./\\ \n\r") {
-		// 	return `invalid character(s) in code`
-		// }
+		if strings.ContainsAny(codeT, ".:&=/\\ \n\r") {
+			return `invalid character(s) in code`
+		}
 
 		textT := getFormValueWithDefaultValue(reqA, "text", "")
 
@@ -831,10 +832,10 @@ func runCmd(cmdLineA []string) {
 			return
 		}
 
-		// if strings.ContainsAny(codeT, "./\\ \n\r") {
-		// 	fmt.Printf(`invalid character(s) in code`)
-		// 	return
-		// }
+		if strings.ContainsAny(codeT, ".:&=/\\ \n\r") {
+			fmt.Printf(`invalid character(s) in code`)
+			return
+		}
 
 		currentPortG := getSwitchWithDefaultValue(cmdLineA, "-port=", "7468")
 
