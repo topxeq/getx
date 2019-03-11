@@ -8,9 +8,9 @@
 	</style>
 </head>
 
-<body>
+<body onLoad="document.mainform.code.focus()">
 	<div style="width: 100%; font-size: 1.8em;">
-		<form action="" method="POST">
+		<form name="mainform" action="" method="POST">
 			<center>
 				<div><span style="color: #9d080c; font-size: 2.0em; font-weight: bold;">getx</span></div>
 				<div id="resultDiv" style="margin-top: 0.6em;">{{.RESULTMSG}}</div>
