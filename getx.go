@@ -29,6 +29,7 @@ var clipMapLockG sync.Mutex
 
 var maxClipCountG int = 100 + 1
 var maxClipSizeG int = 32768
+var maxImageSizeG int = 8000000
 
 var basePathG string = ""
 var dataPathG string = ""
@@ -484,6 +485,13 @@ func HttpHandler(w http.ResponseWriter, reqA *http.Request) {
 			lenT := len(textT)
 			textT = ""
 			resultT = fmt.Sprintf(`<span style="color: red;">failed: %v(%v/%v)</span>`, `content exceeds the size limit`, lenT, maxClipSizeG)
+			break
+		}
+
+		if len(imageTextT) > maxImageSizeG {
+			lenT := len(imageTextT)
+			textT = ""
+			resultT = fmt.Sprintf(`<span style="color: red;">failed: %v(%v/%v)</span>`, `content exceeds the size limit`, lenT, maxImageSizeG)
 			break
 		}
 
