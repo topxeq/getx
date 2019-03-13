@@ -15,6 +15,7 @@ import (
 
 	"github.com/atotto/clipboard"
 	"github.com/kardianos/service"
+	"github.com/topxeq/txtk"
 )
 
 var versionG string = "0.95a"
@@ -416,12 +417,13 @@ var htmlTemplateG = ``
 func HttpHandler(w http.ResponseWriter, reqA *http.Request) {
 	reqA.ParseForm()
 
-	fmt.Printf("%#v\n", reqA.Form)
+	// fmt.Printf("%#v\n", reqA.Form)
 
 	reqT := strings.ToLower(getFormValueWithDefaultValue(reqA, "req", ""))
 
 	codeT := ""
 	textT := ""
+	imageTextT := ""
 	resultT := ""
 
 	// fmt.Printf("req: %#v, code: %v\n", reqT, codeT)
@@ -445,6 +447,13 @@ func HttpHandler(w http.ResponseWriter, reqA *http.Request) {
 		}
 
 		textT = rs
+
+		rs, ok = loadString(filepath.Join(dataPathG, EncodeStringSimple(codeT)+".img"))
+
+		if ok {
+			imageTextT = rs
+		}
+
 		resultT = ""
 
 	case "save", "set":
@@ -464,7 +473,9 @@ func HttpHandler(w http.ResponseWriter, reqA *http.Request) {
 
 		textT = getFormValueWithDefaultValue(reqA, "text", "")
 
-		if textT == "" {
+		imageTextT = txtk.Trim(getFormValueWithDefaultValue(reqA, "mainImg", ""))
+
+		if textT == "" && imageTextT == "" {
 			textT = ""
 			resultT = fmt.Sprintf(`<span style="color: red;">failed: %v</span>`, `empty content`)
 			break
@@ -475,6 +486,10 @@ func HttpHandler(w http.ResponseWriter, reqA *http.Request) {
 			textT = ""
 			resultT = fmt.Sprintf(`<span style="color: red;">failed: %v(%v/%v)</span>`, `content exceeds the size limit`, lenT, maxClipSizeG)
 			break
+		}
+
+		if imageTextT != "" {
+			saveString(imageTextT, filepath.Join(dataPathG, EncodeStringSimple(codeT)+".img"))
 		}
 
 		rs := saveString(textT, filepath.Join(dataPathG, EncodeStringSimple(codeT)+".txt"))
@@ -501,6 +516,7 @@ func HttpHandler(w http.ResponseWriter, reqA *http.Request) {
 	strT := strings.Replace(htmlTemplateG, "{{.CODE}}", codeT, -1)
 	strT = strings.Replace(strT, "{{.TEXT}}", textT, -1)
 	strT = strings.Replace(strT, "{{.RESULTMSG}}", resultT, -1)
+	strT = strings.Replace(strT, "{{.MAINIMG}}", imageTextT, -1)
 
 	w.Write([]byte(strT))
 	// fmt.Fprintf(w, "This is an example server.\n")

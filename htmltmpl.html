@@ -8,12 +8,12 @@
 	</style>
 </head>
 
-<body onLoad="document.mainform.code.focus()">
+<body>
 	<div style="width: 100%; font-size: 1.8em;">
-		<form name="mainform" action="" method="POST">
-			<center>
-				<div><span style="color: #9d080c; font-size: 2.0em; font-weight: bold;">getx</span></div>
-				<div id="resultDiv" style="margin-top: 0.6em;">{{.RESULTMSG}}</div>
+		<center>
+			<div><span style="color: #9d080c; font-size: 2.0em; font-weight: bold;">getx</span></div>
+			<div id="resultDiv" style="margin-top: 0.6em;">{{.RESULTMSG}}</div>
+			<form action="" method="POST">
 				<div style="margin-top: 0.1em;"><input type="submit" name="req" value="load"
 						style="font-size: 1.2em;">&nbsp;&nbsp;<input type="submit" name="req" value="save"
 						style="font-size: 1.2em;">
@@ -22,21 +22,57 @@
 						style="width: 20.0em; font-size: 1.1em;" value="{{.CODE}}"></div>
 				<div style="margin-top: 0.8em; width: 90%; max-width: 30.0em;"><textarea id="textAreaID" name="text"
 						style="font-size: 1.2em; width: 80%; height: 10.0em;" value="">{{.TEXT}}</textarea></div>
-				<div style="margin-top: 20px; font-size: 0.8em;"><a target="_blank"
-						href="http://getx.topget.org/pub/getx/">Download command-line tool (Windows,
-						MacOS, Linux)</a></div>
-				<div style="margin-top: 10px; font-size: 0.8em;">
-					<p>Usage: </p>
-					<p>getx save -code=123 -text="mytext"</p>
-					<p>getx save -code=123 -file=c:\test.txt</p>
-					<p>getx save -code=123 <span style="color: #888888;">(from clipboard)</span></p>
-					<p>getx get -code=123</p>
-					<p>getx get -code=123 -clip <span style="color: #888888;">(save to clipboard)</span></p>
-					<p>getx get -code=123 -file=c:\test.txt<span style="color: #888888;">(save to file)</span></p>
-				</div>
-			</center>
-		</form>
+				<input id="mainImgInput" type="hidden" name="mainImg" value=""> </input>
+			</form>
+			<div style="margin-top: 20px; font-size: 0.8em;">
+				<img id="mainImg" src="{{.MAINIMG}}" alt="">
+			</div>
+			<div style="margin-top: 20px; font-size: 0.8em;"><a target="_blank"
+					href="http://getx.topget.org/pub/getx/">Download command-line tool (Windows,
+					MacOS, Linux)</a></div>
+			<div style="margin-top: 10px; font-size: 0.8em;">
+				<p>Usage: </p>
+				<p>getx save -code=123 -text="mytext"</p>
+				<p>getx save -code=123 -file=c:\test.txt</p>
+				<p>getx save -code=123 <span style="color: #888888;">(from clipboard)</span></p>
+				<p>getx get -code=123</p>
+			</div>
+		</center>
 	</div>
+
+	<script>
+		//获取粘贴板上的图片
+		function setPasteImg() {
+			//粘贴事件
+			document.addEventListener('paste', function (event) {
+				if (event.clipboardData || event.originalEvent) {
+					var clipboardData = (event.clipboardData || event.originalEvent.clipboardData);
+					if (clipboardData.items) {
+						var blob;
+						for (var i = 0; i < clipboardData.items.length; i++) {
+							if (clipboardData.items[i].type.indexOf("image") !== -1) {
+								blob = clipboardData.items[i].getAsFile();
+							}
+						}
+						var render = new FileReader();
+						render.onload = function (evt) {
+							//输出base64编码
+							var base64 = evt.target.result;
+							document.getElementById('mainImg').setAttribute('src', base64);
+							document.getElementById('mainImgInput').setAttribute('value', base64);
+						}
+						render.readAsDataURL(blob);
+					}
+
+				}
+
+			})
+
+		}
+
+		setPasteImg();
+
+	</script>
 </body>
 
 </html>
