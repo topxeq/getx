@@ -15,7 +15,6 @@ import (
 
 	"github.com/atotto/clipboard"
 	"github.com/kardianos/service"
-	"github.com/topxeq/txtk"
 )
 
 var versionG string = "0.95a"
@@ -473,7 +472,7 @@ func HttpHandler(w http.ResponseWriter, reqA *http.Request) {
 
 		textT = getFormValueWithDefaultValue(reqA, "text", "")
 
-		imageTextT = txtk.Trim(getFormValueWithDefaultValue(reqA, "mainImg", ""))
+		imageTextT = strings.TrimSpace(getFormValueWithDefaultValue(reqA, "mainImg", ""))
 
 		if textT == "" && imageTextT == "" {
 			textT = ""
