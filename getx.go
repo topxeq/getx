@@ -15,6 +15,7 @@ import (
 
 	"github.com/atotto/clipboard"
 	"github.com/kardianos/service"
+	"github.com/topxeq/tk"
 )
 
 var versionG string = "0.95a"
@@ -438,12 +439,22 @@ func HttpHandler(w http.ResponseWriter, reqA *http.Request) {
 			break
 		}
 
+		matchT := tk.RegFindFirst(codeT, `^TXENC(.*?)TXEND`, 1)
+
+		if !tk.IsErrorString(matchT) {
+			codeT = tk.SplitN(codeT, "TXEND", 2)[1]
+		}
+
 		rs, ok := loadString(filepath.Join(dataPathG, EncodeStringSimple(codeT)+".txt"))
 
 		if !ok {
 			textT = ""
 			resultT = fmt.Sprintf(`<span style="color: red;">failed: %v</span>`, rs)
 			break
+		}
+
+		if !tk.IsErrorString(matchT) {
+			rs = tk.DecryptStringByTXDEE(rs, matchT)
 		}
 
 		textT = rs
@@ -486,6 +497,14 @@ func HttpHandler(w http.ResponseWriter, reqA *http.Request) {
 			textT = ""
 			resultT = fmt.Sprintf(`<span style="color: red;">failed: %v(%v/%v)</span>`, `content exceeds the size limit`, lenT, maxClipSizeG)
 			break
+		}
+
+		matchT := tk.RegFindFirst(codeT, `^TXENC(.*?)TXEND`, 1)
+
+		if !tk.IsErrorString(matchT) {
+			codeT = tk.SplitN(codeT, "TXEND", 2)[1]
+
+			textT = tk.EncryptStringByTXDEE(textT, matchT)
 		}
 
 		if len(imageTextT) > maxImageSizeG {
