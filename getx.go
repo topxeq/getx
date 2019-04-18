@@ -1,9 +1,7 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -51,323 +49,7 @@ func logWithTime(formatA string, argsA ...interface{}) {
 		return
 	}
 
-	appendStringToFile(fmt.Sprintf(fmt.Sprintf("[%v] ", time.Now())+formatA+"\n", argsA...), logFileG)
-}
-
-func fileExists(fileNameA string) bool {
-	_, err := os.Stat(fileNameA)
-	return err == nil || os.IsExist(err)
-}
-
-func isDirectory(dirNameA string) bool {
-	f, err := os.Open(dirNameA)
-	if err != nil {
-		return false
-	}
-	defer f.Close()
-
-	fi, err := f.Stat()
-	if err != nil {
-		return false
-	}
-
-	if mode := fi.Mode(); mode.IsDir() {
-		return true
-	} else {
-		return false
-	}
-}
-
-func ensureMakeDirs(pathA string) string {
-	if !fileExists(pathA) {
-		os.MkdirAll(pathA, 0777)
-		return ""
-	} else {
-		if isDirectory(pathA) {
-			return ""
-		} else {
-			return "a file with same name exists"
-		}
-	}
-}
-
-func loadString(fileNameA string) (string, bool) {
-	if !fileExists(fileNameA) {
-		return "file not exists", false
-	}
-
-	fileT, err := os.Open(fileNameA)
-	if err != nil {
-		return err.Error(), false
-	}
-
-	defer fileT.Close()
-
-	fileContentT, err := ioutil.ReadAll(fileT)
-	if err != nil {
-		return err.Error(), false
-	}
-
-	return string(fileContentT), true
-}
-
-func loadStringList(fileNameA string) []string {
-	if !fileExists(fileNameA) {
-		return nil
-	}
-
-	fileT, err := os.Open(fileNameA)
-	if err != nil {
-		return nil
-	}
-
-	defer fileT.Close()
-
-	fileContentT, err := ioutil.ReadAll(fileT)
-	if err != nil {
-		return nil
-	}
-
-	stringList := strings.Split(strings.Replace(string(fileContentT), "\r", "", -1), "\n")
-
-	return stringList
-}
-
-func loadMapFromFile(fileNameA string) map[string]string {
-	if !fileExists(fileNameA) {
-		return nil
-	}
-
-	strListT := loadStringList(fileNameA)
-
-	if strListT == nil {
-		return nil
-	}
-
-	mapT := make(map[string]string)
-	for i := range strListT {
-		lineT := strListT[i]
-		lineListT := strings.SplitN(lineT, "=", 2)
-		if (lineListT == nil) || (len(lineListT) < 2) {
-			continue
-		}
-		mapT[lineListT[0]] = lineListT[1]
-	}
-
-	return mapT
-}
-
-func appendStringToFile(strA string, fileA string) string {
-	fileT, err := os.OpenFile(fileA, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-	if err != nil {
-		return err.Error()
-	}
-
-	writerT := bufio.NewWriter(fileT)
-
-	writerT.WriteString(strA)
-
-	writerT.Flush()
-
-	defer fileT.Close()
-
-	return ""
-}
-
-func saveString(strA string, fileA string) string {
-	file, err := os.Create(fileA)
-	if err != nil {
-		return err.Error()
-	}
-
-	defer file.Close()
-
-	wFile := bufio.NewWriter(file)
-	_, err = wFile.WriteString(strA)
-
-	if err != nil {
-		return err.Error()
-	}
-
-	err = wFile.Flush()
-
-	if err != nil {
-		return err.Error()
-	}
-
-	return ""
-}
-
-func ishex(c byte) bool {
-	switch {
-	case '0' <= c && c <= '9':
-		return true
-	case 'a' <= c && c <= 'f':
-		return true
-	case 'A' <= c && c <= 'F':
-		return true
-	}
-	return false
-}
-
-func unhex(c byte) byte {
-	switch {
-	case '0' <= c && c <= '9':
-		return c - '0'
-	case 'a' <= c && c <= 'f':
-		return c - 'a' + 10
-	case 'A' <= c && c <= 'F':
-		return c - 'A' + 10
-	}
-	return 0
-}
-
-func EncodeStringSimple(strA string) string {
-	lenT := len(strA)
-
-	hexCount := 0
-	for i := 0; i < lenT; i++ {
-		v := strA[i]
-		if !(((v >= '0') && (v <= '9')) || ((v >= 'a') && (v <= 'z'))) {
-			hexCount++
-		}
-	}
-
-	if hexCount == 0 {
-		return strA
-	}
-
-	t := make([]byte, lenT+2*hexCount)
-	j := 0
-
-	for i := 0; i < lenT; i++ {
-		switch v := strA[i]; {
-		case !(((v >= '0') && (v <= '9')) || ((v >= 'a') && (v <= 'z'))):
-			t[j] = '%'
-			t[j+1] = "0123456789ABCDEF"[v>>4]
-			t[j+2] = "0123456789ABCDEF"[v&15]
-			j += 3
-		default:
-			t[j] = strA[i]
-			j++
-		}
-	}
-
-	return string(t)
-}
-
-func DecodeStringSimple(s string) string {
-	n := 0
-
-	for i := 0; i < len(s); {
-		switch s[i] {
-		case '%':
-			n++
-
-			if i+2 >= len(s) || !ishex(s[i+1]) || !ishex(s[i+2]) {
-				return s
-			}
-
-			i += 3
-
-		default:
-			i++
-		}
-	}
-
-	t := make([]byte, len(s)-2*n)
-	j := 0
-	for i := 0; i < len(s); {
-		switch s[i] {
-		case '%':
-			t[j] = unhex(s[i+1])<<4 | unhex(s[i+2])
-			j++
-			i += 3
-		default:
-			t[j] = s[i]
-			j++
-			i++
-		}
-	}
-	return string(t)
-}
-
-func getFormValueWithDefaultValue(reqA *http.Request, keyA string, defaultA string) string {
-	valueT, ok := reqA.Form[keyA]
-	if ok {
-		return valueT[0]
-	} else {
-		return defaultA
-	}
-}
-
-func getSwitchWithDefaultValue(argsA []string, switchStrA string, defaultA string) string {
-	tmpStrT := ""
-	for _, argT := range argsA {
-		if strings.HasPrefix(argT, switchStrA) {
-			tmpStrT = argT[len(switchStrA):]
-			if strings.HasPrefix(tmpStrT, "\"") && strings.HasSuffix(tmpStrT, "\"") {
-				return tmpStrT[1 : len(tmpStrT)-1]
-			}
-
-			return tmpStrT
-		}
-
-	}
-
-	return defaultA
-
-}
-
-func ifSwitchExists(argsA []string, switchStrA string) bool {
-	for _, argT := range argsA {
-		if strings.HasPrefix(argT, switchStrA) {
-			return true
-		}
-	}
-
-	return false
-}
-
-func downloadUtf8Page(urlA string, postDataA url.Values, timeoutSecsA time.Duration) string {
-	client := &http.Client{
-		//CheckRedirect: redirectPolicyFunc,
-		Timeout: 1000000000 * timeoutSecsA,
-	}
-
-	var urlT string
-	if !strings.HasPrefix(strings.ToLower(urlA), "http") {
-		urlT = "http://" + urlA
-	} else {
-		urlT = urlA
-	}
-
-	var respT *http.Response
-	var errT error
-	// var req *http.Request
-
-	if postDataA == nil {
-		respT, errT = client.Get(urlT)
-	} else {
-		respT, errT = client.PostForm(urlT, postDataA)
-	}
-
-	if errT == nil {
-		defer respT.Body.Close()
-		if respT.StatusCode != 200 {
-			return fmt.Sprintf("failed response status: %v", respT.StatusCode)
-		} else {
-			body, errT := ioutil.ReadAll(respT.Body)
-
-			if errT == nil {
-				return string(body)
-			} else {
-				return errT.Error()
-			}
-		}
-	} else {
-		return errT.Error()
-	}
+	tk.AppendStringToFile(fmt.Sprintf(fmt.Sprintf("[%v] ", time.Now())+formatA+"\n", argsA...), logFileG)
 }
 
 type program struct {
@@ -420,7 +102,7 @@ func HttpHandler(w http.ResponseWriter, reqA *http.Request) {
 
 	// fmt.Printf("%#v\n", reqA.Form)
 
-	reqT := strings.ToLower(getFormValueWithDefaultValue(reqA, "req", ""))
+	reqT := strings.ToLower(tk.GetFormValueWithDefaultValue(reqA, "req", ""))
 
 	codeT := ""
 	textT := ""
@@ -431,7 +113,7 @@ func HttpHandler(w http.ResponseWriter, reqA *http.Request) {
 
 	switch reqT {
 	case "load", "get", "share":
-		codeT = strings.TrimSpace(getFormValueWithDefaultValue(reqA, "code", ""))
+		codeT = strings.TrimSpace(tk.GetFormValueWithDefaultValue(reqA, "code", ""))
 
 		if codeT == "" {
 			textT = ""
@@ -445,7 +127,7 @@ func HttpHandler(w http.ResponseWriter, reqA *http.Request) {
 			codeT = tk.SplitN(codeT, "TXEND", 2)[1]
 		}
 
-		rs, ok := loadString(filepath.Join(dataPathG, EncodeStringSimple(codeT)+".txt"))
+		rs, ok := tk.LoadStringFromFileB(filepath.Join(dataPathG, tk.EncodeStringSimple(codeT)+".txt"))
 
 		if !ok {
 			textT = ""
@@ -459,7 +141,7 @@ func HttpHandler(w http.ResponseWriter, reqA *http.Request) {
 
 		textT = rs
 
-		rs, ok = loadString(filepath.Join(dataPathG, EncodeStringSimple(codeT)+".img"))
+		rs, ok = tk.LoadStringFromFileB(filepath.Join(dataPathG, tk.EncodeStringSimple(codeT)+".img"))
 
 		if ok {
 			imageTextT = rs
@@ -468,7 +150,7 @@ func HttpHandler(w http.ResponseWriter, reqA *http.Request) {
 		resultT = ""
 
 	case "save", "set":
-		codeT = strings.TrimSpace(getFormValueWithDefaultValue(reqA, "code", ""))
+		codeT = strings.TrimSpace(tk.GetFormValueWithDefaultValue(reqA, "code", ""))
 
 		if codeT == "" {
 			textT = ""
@@ -482,9 +164,9 @@ func HttpHandler(w http.ResponseWriter, reqA *http.Request) {
 			break
 		}
 
-		textT = getFormValueWithDefaultValue(reqA, "text", "")
+		textT = tk.GetFormValueWithDefaultValue(reqA, "text", "")
 
-		imageTextT = strings.TrimSpace(getFormValueWithDefaultValue(reqA, "mainImg", ""))
+		imageTextT = strings.TrimSpace(tk.GetFormValueWithDefaultValue(reqA, "mainImg", ""))
 
 		if textT == "" && imageTextT == "" {
 			textT = ""
@@ -515,10 +197,10 @@ func HttpHandler(w http.ResponseWriter, reqA *http.Request) {
 		}
 
 		if imageTextT != "" {
-			saveString(imageTextT, filepath.Join(dataPathG, EncodeStringSimple(codeT)+".img"))
+			tk.SaveStringToFile(imageTextT, filepath.Join(dataPathG, tk.EncodeStringSimple(codeT)+".img"))
 		}
 
-		rs := saveString(textT, filepath.Join(dataPathG, EncodeStringSimple(codeT)+".txt"))
+		rs := tk.SaveStringToFile(textT, filepath.Join(dataPathG, tk.EncodeStringSimple(codeT)+".txt"))
 
 		if rs != "" {
 			textT = ""
@@ -533,10 +215,32 @@ func HttpHandler(w http.ResponseWriter, reqA *http.Request) {
 
 	}
 
+	formatA := tk.GetFormValueWithDefaultValue(reqA, "format", "")
+
+	if formatA == "html" {
+		w.Header().Set("Content-Type", "text/html;charset=utf-8")
+		w.Write([]byte(textT))
+		return
+	} else if formatA == "md" {
+		htmlTemplateG, ok := tk.LoadStringFromFileB(filepath.Join(basePathG, "mdtmpl.html"))
+
+		if ok {
+			text1T := strings.Replace(textT, "\r", "", -1)
+			text1T = strings.Replace(text1T, "\n", "#CR#", -1)
+			text1T = strings.Replace(text1T, `"`, "#DQ#", -1)
+
+			strT := strings.Replace(htmlTemplateG, "<TXMDDATA></TXMDDATA>", `var mdT = "`+text1T+`";`, -1)
+
+			w.Header().Set("Content-Type", "text/html;charset=utf-8")
+			w.Write([]byte(strT))
+			return
+		}
+	}
+
 	w.Header().Set("Content-Type", "text/html;charset=utf-8")
 
 	if true { //htmlTemplateG == "" {
-		htmlTemplateG, _ = loadString(filepath.Join(basePathG, "htmltmpl.html"))
+		htmlTemplateG, _ = tk.LoadStringFromFileB(filepath.Join(basePathG, "htmltmpl.html"))
 	}
 
 	strT := strings.Replace(htmlTemplateG, "{{.CODE}}", codeT, -1)
@@ -566,7 +270,7 @@ func shareHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	rs, err := loadString(filepath.Join(dataPathG, EncodeStringSimple(codeT)+".txt"))
+	rs, err := tk.LoadStringFromFileB(filepath.Join(dataPathG, tk.EncodeStringSimple(codeT)+".txt"))
 
 	if !err {
 		rs = fmt.Sprintf("failed: %v", rs)
@@ -591,7 +295,7 @@ func doApi(resA http.ResponseWriter, reqA *http.Request) string {
 
 	reqA.ParseForm()
 
-	reqT := getFormValueWithDefaultValue(reqA, "req", "")
+	reqT := tk.GetFormValueWithDefaultValue(reqA, "req", "")
 
 	switch reqT {
 	case "":
@@ -599,7 +303,7 @@ func doApi(resA http.ResponseWriter, reqA *http.Request) string {
 	case "showstatus", "status":
 		return fmt.Sprintf("getx V%v, os: %v, basePathG: %v, dataPathG: %v", versionG, runtime.GOOS, basePathG, dataPathG)
 	case "save", "set":
-		codeT := strings.TrimSpace(getFormValueWithDefaultValue(reqA, "code", ""))
+		codeT := strings.TrimSpace(tk.GetFormValueWithDefaultValue(reqA, "code", ""))
 
 		if codeT == "" {
 			return "invalid code"
@@ -609,7 +313,7 @@ func doApi(resA http.ResponseWriter, reqA *http.Request) string {
 			return `invalid character(s) in code`
 		}
 
-		textT := getFormValueWithDefaultValue(reqA, "text", "")
+		textT := tk.GetFormValueWithDefaultValue(reqA, "text", "")
 
 		if strings.TrimSpace(textT) == "" {
 			return "content empty"
@@ -619,13 +323,13 @@ func doApi(resA http.ResponseWriter, reqA *http.Request) string {
 			return "content exceeds the size limit"
 		}
 
-		rs := saveString(textT, filepath.Join(dataPathG, EncodeStringSimple(codeT)+".txt"))
+		rs := tk.SaveStringToFile(textT, filepath.Join(dataPathG, tk.EncodeStringSimple(codeT)+".txt"))
 
 		if rs != "" {
 			return fmt.Sprintf("failed: %v", rs)
 		}
 
-		withLinkT := getFormValueWithDefaultValue(reqA, "link", "")
+		withLinkT := tk.GetFormValueWithDefaultValue(reqA, "link", "")
 
 		if withLinkT != "" {
 			return "saved, share link: http://" + reqA.Host + "/share/" + codeT
@@ -633,16 +337,16 @@ func doApi(resA http.ResponseWriter, reqA *http.Request) string {
 
 		return "saved"
 	case "load", "get":
-		codeT := getFormValueWithDefaultValue(reqA, "code", "")
+		codeT := tk.GetFormValueWithDefaultValue(reqA, "code", "")
 
 		if strings.TrimSpace(codeT) == "" {
 			return "invalid code"
 		}
 
-		rs, err := loadString(filepath.Join(dataPathG, EncodeStringSimple(codeT)+".txt"))
+		rs, errT := tk.LoadStringFromFileE(filepath.Join(dataPathG, tk.EncodeStringSimple(codeT)+".txt"))
 
-		if !err {
-			return fmt.Sprintf("failed: %v", rs)
+		if errT != nil {
+			return fmt.Sprintf("failed: %v", errT.Error())
 		}
 
 		return rs
@@ -684,13 +388,13 @@ func Svc() {
 	if basePathG == "" {
 		basePathG = defaultBasePathG
 
-		ensureMakeDirs(basePathG)
+		tk.EnsureMakeDirs(basePathG)
 	}
 
 	if dataPathG == "" {
 		dataPathG = filepath.Join(basePathG, "data")
 
-		ensureMakeDirs(dataPathG)
+		tk.EnsureMakeDirs(dataPathG)
 	}
 
 	logFileG = filepath.Join(basePathG, "getx.log")
@@ -708,8 +412,8 @@ func Svc() {
 	var ok bool
 
 	cfgFileNameT := filepath.Join(basePathG, defaultConfigFileNameG)
-	if fileExists(cfgFileNameT) {
-		fileContentT := loadMapFromFile(cfgFileNameT)
+	if tk.IfFileExists(cfgFileNameT) {
+		fileContentT := tk.LoadSimpleMapFromFile(cfgFileNameT)
 
 		if fileContentT != nil {
 			currentPortG, ok = fileContentT["port"]
@@ -775,7 +479,7 @@ func runCmd(cmdLineA []string) {
 
 	var errT error
 
-	basePathG = getSwitchWithDefaultValue(cmdLineA, "-base=", "")
+	basePathG = tk.GetSwitchWithDefaultValue(cmdLineA, "-base=", "")
 
 	if strings.TrimSpace(basePathG) == "" {
 		basePathG, errT = filepath.Abs(defaultBasePathG)
@@ -786,17 +490,17 @@ func runCmd(cmdLineA []string) {
 		}
 	}
 
-	verboseT := ifSwitchExists(cmdLineA, "-v")
+	verboseT := tk.IfSwitchExists(cmdLineA, "-v")
 
-	ensureMakeDirs(basePathG)
+	tk.EnsureMakeDirs(basePathG)
 
-	if !fileExists(basePathG) {
+	if !tk.IfFileExists(basePathG) {
 		fmt.Printf("base path not exists: %v, use current directory instead\n", basePathG)
 		basePathG = "."
 		return
 	}
 
-	if !isDirectory(basePathG) {
+	if !tk.IsDirectory(basePathG) {
 		fmt.Printf("base path not exists: %v\n", basePathG)
 		return
 	}
@@ -819,11 +523,11 @@ func runCmd(cmdLineA []string) {
 			logWithTime("Service \"%s\" failed to run.", (*s).String())
 		}
 	case "get", "load":
-		codeT := getSwitchWithDefaultValue(cmdLineA, "-code=", "public")
+		codeT := tk.GetSwitchWithDefaultValue(cmdLineA, "-code=", "public")
 
-		currentPortG := getSwitchWithDefaultValue(cmdLineA, "-port=", "7468")
+		currentPortG := tk.GetSwitchWithDefaultValue(cmdLineA, "-port=", "7468")
 
-		serverUrlG = getSwitchWithDefaultValue(cmdLineA, "-server=", "getx.topget.org")
+		serverUrlG = tk.GetSwitchWithDefaultValue(cmdLineA, "-server=", "getx.topget.org")
 
 		if !strings.HasPrefix(strings.ToLower(serverUrlG), "http") {
 			serverUrlG = fmt.Sprintf("http://%v:%v/api", serverUrlG, currentPortG)
@@ -838,18 +542,18 @@ func runCmd(cmdLineA []string) {
 		postT.Set("req", "get")
 		postT.Set("code", codeT)
 
-		rs := downloadUtf8Page(serverUrlG, postT, 15)
+		rs := tk.DownloadPageUTF8(serverUrlG, postT, "", 15)
 
-		ifClipT := ifSwitchExists(cmdLineA, "-clip")
+		ifClipT := tk.IfSwitchExists(cmdLineA, "-clip")
 
 		if ifClipT {
 			clipboard.WriteAll(rs)
 		}
 
-		saveFileT := getSwitchWithDefaultValue(cmdLineA, "-file=", "")
+		saveFileT := tk.GetSwitchWithDefaultValue(cmdLineA, "-file=", "")
 
 		if saveFileT != "" {
-			errStrT := saveString(rs, saveFileT)
+			errStrT := tk.SaveStringToFile(rs, saveFileT)
 
 			if errStrT != "" {
 				fmt.Printf("failed to save file (%v): %v", saveFileT, errStrT)
@@ -858,7 +562,7 @@ func runCmd(cmdLineA []string) {
 			break
 		}
 
-		noLineEndFlagT := ifSwitchExists(cmdLineA, "-noLineEnd") || ifSwitchExists(cmdLineA, "-nl") || ifSwitchExists(cmdLineA, "-NL")
+		noLineEndFlagT := tk.IfSwitchExists(cmdLineA, "-noLineEnd") || tk.IfSwitchExists(cmdLineA, "-nl") || tk.IfSwitchExists(cmdLineA, "-NL")
 
 		if noLineEndFlagT {
 			fmt.Print(rs)
@@ -867,7 +571,7 @@ func runCmd(cmdLineA []string) {
 		}
 
 	case "save", "set":
-		codeT := strings.TrimSpace(getSwitchWithDefaultValue(cmdLineA, "-code=", "public"))
+		codeT := strings.TrimSpace(tk.GetSwitchWithDefaultValue(cmdLineA, "-code=", "public"))
 
 		if codeT == "" {
 			fmt.Printf(`empty code`)
@@ -879,30 +583,30 @@ func runCmd(cmdLineA []string) {
 			return
 		}
 
-		currentPortG := getSwitchWithDefaultValue(cmdLineA, "-port=", "7468")
+		currentPortG := tk.GetSwitchWithDefaultValue(cmdLineA, "-port=", "7468")
 
-		serverUrlG = getSwitchWithDefaultValue(cmdLineA, "-server=", "getx.topget.org")
+		serverUrlG = tk.GetSwitchWithDefaultValue(cmdLineA, "-server=", "getx.topget.org")
 
 		if !strings.HasPrefix(strings.ToLower(serverUrlG), "http") {
 			serverUrlG = fmt.Sprintf("http://%v:%v/api", serverUrlG, currentPortG)
 		}
 
 		var textT string
-		var ok bool
-		var err error
+		// var ok bool
+		var errT error
 
-		if fileNameT := getSwitchWithDefaultValue(cmdLineA, "-file=", ""); fileNameT != "" {
+		if fileNameT := tk.GetSwitchWithDefaultValue(cmdLineA, "-file=", ""); fileNameT != "" {
 
-			textT, ok = loadString(fileNameT)
+			textT, errT = tk.LoadStringFromFileE(fileNameT)
 
-			if !ok {
-				fmt.Printf("failed to load content from file")
+			if errT != nil {
+				fmt.Printf("failed to load content from file: %v", errT.Error())
 				return
 			}
-		} else if textT = getSwitchWithDefaultValue(cmdLineA, "-text=", ""); textT != "" {
+		} else if textT = tk.GetSwitchWithDefaultValue(cmdLineA, "-text=", ""); textT != "" {
 
-		} else if textT, err = clipboard.ReadAll(); err != nil {
-			fmt.Printf("could not get text from clipboard: %v", err.Error())
+		} else if textT, errT = clipboard.ReadAll(); errT != nil {
+			fmt.Printf("could not get text from clipboard: %v", errT.Error())
 			return
 		}
 
@@ -916,9 +620,9 @@ func runCmd(cmdLineA []string) {
 		postT.Set("code", codeT)
 		postT.Set("text", textT)
 
-		rs := downloadUtf8Page(serverUrlG, postT, 15)
+		rs := tk.DownloadPageUTF8(serverUrlG, postT, "", 15)
 
-		noLineEndFlagT := ifSwitchExists(cmdLineA, "-noLineEnd") || ifSwitchExists(cmdLineA, "-nl") || ifSwitchExists(cmdLineA, "-NL")
+		noLineEndFlagT := tk.IfSwitchExists(cmdLineA, "-noLineEnd") || tk.IfSwitchExists(cmdLineA, "-nl") || tk.IfSwitchExists(cmdLineA, "-NL")
 
 		if noLineEndFlagT {
 			fmt.Print(rs)
