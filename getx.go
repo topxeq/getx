@@ -297,6 +297,11 @@ func doApi(resA http.ResponseWriter, reqA *http.Request) string {
 
 	reqT := tk.GetFormValueWithDefaultValue(reqA, "req", "")
 
+	if resA != nil {
+		resA.Header().Set("Access-Control-Allow-Origin", "*")
+		resA.Header().Set("Content-Type", "text/plain;charset=utf-8")
+	}
+
 	switch reqT {
 	case "":
 		return fmt.Sprintf("getx V%v, empty request", versionG)
