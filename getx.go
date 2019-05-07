@@ -270,6 +270,10 @@ func shareHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	if tk.RegContains(codeT, `%[A-F0-9][A-F0-9]`) {
+		codeT = tk.UrlDecode(codeT)
+	}
+
 	rs, err := tk.LoadStringFromFileB(filepath.Join(dataPathG, tk.EncodeStringSimple(codeT)+".txt"))
 
 	if !err {
@@ -279,6 +283,61 @@ func shareHandler(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Content-Type", "text/plain;charset=utf-8")
 
 	w.Write([]byte(rs))
+}
+
+func codeHandler(w http.ResponseWriter, req *http.Request) {
+	codeT := req.RequestURI
+
+	codeT = strings.TrimSpace(strings.TrimPrefix(codeT, "/code/"))
+
+	var rs string
+
+	if codeT == "" {
+		rs = "invalid code"
+
+		w.Header().Set("Content-Type", "text/plain;charset=utf-8")
+		w.Write([]byte(rs))
+
+		return
+	}
+
+	if tk.RegContains(codeT, `%[A-F0-9][A-F0-9]`) {
+		codeT = tk.UrlDecode(codeT)
+	}
+
+	rs, ok := tk.LoadStringFromFileB(filepath.Join(dataPathG, tk.EncodeStringSimple(codeT)+".txt"))
+
+	var textT, resultT, imageTextT string
+
+	if !ok {
+		textT = ""
+		resultT = fmt.Sprintf(`<span style="color: red;">failed: %v</span>`, rs)
+	} else {
+		textT = rs
+
+		rs, ok = tk.LoadStringFromFileB(filepath.Join(dataPathG, tk.EncodeStringSimple(codeT)+".img"))
+
+		if ok {
+			imageTextT = rs
+		}
+
+		resultT = ""
+
+	}
+
+	w.Header().Set("Content-Type", "text/html;charset=utf-8")
+
+	if true { //htmlTemplateG == "" {
+		htmlTemplateG, _ = tk.LoadStringFromFileB(filepath.Join(basePathG, "htmltmpl.html"))
+	}
+
+	strT := strings.Replace(htmlTemplateG, "{{.CODE}}", codeT, -1)
+	strT = strings.Replace(strT, "{{.TEXT}}", textT, -1)
+	strT = strings.Replace(strT, "{{.RESULTMSG}}", resultT, -1)
+	strT = strings.Replace(strT, "{{.MAINIMG}}", imageTextT, -1)
+
+	w.Write([]byte(strT))
+
 }
 
 func HttpApiHandler(w http.ResponseWriter, req *http.Request) {
@@ -367,6 +426,7 @@ func startHttpServer(portA string) {
 	// logWithTime("https port: %v", portA)
 	http.HandleFunc("/api", HttpApiHandler)
 	http.HandleFunc("/share/", shareHandler)
+	http.HandleFunc("/code/", codeHandler)
 
 	http.HandleFunc("/", HttpHandler)
 	// s := &http.Server{
