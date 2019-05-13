@@ -340,6 +340,48 @@ func codeHandler(w http.ResponseWriter, req *http.Request) {
 
 }
 
+func mdHandler(w http.ResponseWriter, req *http.Request) {
+	codeT := req.RequestURI
+
+	codeT = strings.TrimSpace(strings.TrimPrefix(codeT, "/md/"))
+
+	var rs string
+
+	if codeT == "" {
+		rs = "invalid code"
+
+		w.Header().Set("Content-Type", "text/plain;charset=utf-8")
+		w.Write([]byte(rs))
+
+		return
+	}
+
+	if tk.RegContains(codeT, `%[A-F0-9][A-F0-9]`) {
+		codeT = tk.UrlDecode(codeT)
+	}
+
+	textT, ok := tk.LoadStringFromFileB(filepath.Join(dataPathG, tk.EncodeStringSimple(codeT)+".txt"))
+
+	htmlTemplateG, ok := tk.LoadStringFromFileB(filepath.Join(basePathG, "mdtmpl.html"))
+
+	if ok {
+		text1T := strings.Replace(textT, "\r", "", -1)
+		text1T = strings.Replace(text1T, "\n", "#CR#", -1)
+		text1T = strings.Replace(text1T, `"`, "#DQ#", -1)
+
+		strT := strings.Replace(htmlTemplateG, "<TXMDDATA></TXMDDATA>", `var mdT = "`+text1T+`";`, -1)
+
+		w.Header().Set("Content-Type", "text/html;charset=utf-8")
+		w.Write([]byte(strT))
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/html;charset=utf-8")
+	w.Write([]byte("failed"))
+	return
+
+}
+
 func HttpApiHandler(w http.ResponseWriter, req *http.Request) {
 	rs := doApi(w, req)
 	w.Header().Set("Content-Type", "text/plain;charset=utf-8")
@@ -427,6 +469,7 @@ func startHttpServer(portA string) {
 	http.HandleFunc("/api", HttpApiHandler)
 	http.HandleFunc("/share/", shareHandler)
 	http.HandleFunc("/code/", codeHandler)
+	http.HandleFunc("/md/", mdHandler)
 
 	http.HandleFunc("/", HttpHandler)
 	// s := &http.Server{
