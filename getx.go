@@ -27,7 +27,7 @@ var clipMapG map[string]string = nil
 var clipMapLockG sync.Mutex
 
 var maxClipCountG int = 100 + 1
-var maxClipSizeG int = 32768
+var maxClipSizeG int = 832768
 var maxImageSizeG int = 8000000
 
 var basePathG string = ""
