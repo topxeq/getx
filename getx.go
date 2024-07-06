@@ -38,6 +38,8 @@ var serverUrlG = ""
 
 var serviceModeG bool = false
 
+var muxG *http.ServeMux
+
 var exit = make(chan struct{})
 
 func logWithTime(formatA string, argsA ...interface{}) {
@@ -480,7 +482,7 @@ func startHttpServer(portA string) {
 	// 	WriteTimeout:   10 * time.Second,
 	// 	MaxHeaderBytes: 1 << 20,
 	// }
-	err := http.ListenAndServe(":"+portA, nil)
+	err := http.ListenAndServe(":"+portA, muxG)
 	if err != nil {
 		logWithTime("ListenAndServeHttp: %v\n", err.Error())
 		if serviceModeG {
@@ -508,7 +510,7 @@ func startHttpsServer(portA string) {
 	// 	WriteTimeout:   10 * time.Second,
 	// 	MaxHeaderBytes: 1 << 20,
 	// }
-	err := http.ListenAndServeTLS(":"+portA, filepath.Join(basePathG, "server.crt"), filepath.Join(basePathG, "server.key"), nil)
+	err := http.ListenAndServeTLS(":"+portA, filepath.Join(basePathG, "server.crt"), filepath.Join(basePathG, "server.key"), muxG)
 	if err != nil {
 		logWithTime("ListenAndServeHttps: %v\n", err.Error())
 		if serviceModeG {
@@ -588,12 +590,14 @@ func Svc() {
 	logWithTime("Service started.")
 	logWithTime("Using config file: %v", cfgFileNameT)
 
-	http.HandleFunc("/api", HttpApiHandler)
-	http.HandleFunc("/share/", shareHandler)
-	http.HandleFunc("/code/", codeHandler)
-	http.HandleFunc("/md/", mdHandler)
+	muxG = http.NewServeMux()
 
-	http.HandleFunc("/", HttpHandler)
+	muxG.HandleFunc("/api", HttpApiHandler)
+	muxG.HandleFunc("/share/", shareHandler)
+	muxG.HandleFunc("/code/", codeHandler)
+	muxG.HandleFunc("/md/", mdHandler)
+
+	muxG.HandleFunc("/", HttpHandler)
 	// s := &http.Server{
 
 	go startHttpServer(currentPortG)
