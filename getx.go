@@ -16,9 +16,10 @@ import (
 	"github.com/topxeq/tk"
 )
 
-var versionG string = "0.95a"
+var versionG string = "0.96a"
 
 var defaultPortG string = "7468"
+var defaultSslPortG string = "7469"
 var defaultBasePathG string
 var defaultConfigFileNameG string = "getx.cfg"
 var defaultClipFileNameG string = "clip.txt"
@@ -491,6 +492,34 @@ func startHttpServer(portA string) {
 
 }
 
+func startHttpsServer(portA string) {
+	logWithTime("starting https server on port %v...", portA)
+	// logWithTime("https port: %v", portA)
+	http.HandleFunc("/api", HttpApiHandler)
+	http.HandleFunc("/share/", shareHandler)
+	http.HandleFunc("/code/", codeHandler)
+	http.HandleFunc("/md/", mdHandler)
+
+	http.HandleFunc("/", HttpHandler)
+	// s := &http.Server{
+	// 	Addr:           ":"+portA,
+	// 	Handler:        HttpApiHandler,
+	// 	ReadTimeout:    10 * time.Second,
+	// 	WriteTimeout:   10 * time.Second,
+	// 	MaxHeaderBytes: 1 << 20,
+	// }
+	err := http.ListenAndServeTLS(":"+portA, filepath.Join(basePathG, "server.crt"), filepath.Join(basePathG, "server.key"), nil)
+	if err != nil {
+		logWithTime("ListenAndServeHttps: %v\n", err.Error())
+		if serviceModeG {
+			fmt.Printf("failed to start https server: %v", err.Error())
+		}
+	} else { // won't be reached since code will stop while ListenAndServe succeed
+		logWithTime("ListenAndServeHttps: %v", portA)
+	}
+
+}
+
 func Svc() {
 
 	if basePathG == "" {
@@ -517,6 +546,7 @@ func Svc() {
 	logWithTime("os: %v, basePathG: %v, configFileNameG: %v", runtime.GOOS, basePathG, defaultConfigFileNameG)
 
 	var currentPortG string = defaultPortG
+	var currentSslPortG string = defaultSslPortG
 	var ok bool
 
 	cfgFileNameT := filepath.Join(basePathG, defaultConfigFileNameG)
@@ -527,6 +557,11 @@ func Svc() {
 			currentPortG, ok = fileContentT["port"]
 			if !ok {
 				currentPortG = defaultPortG
+			}
+
+			currentSslPortG, ok = fileContentT["sslPort"]
+			if !ok {
+				currentSslPortG = defaultSslPortG
 			}
 
 			dataPathG, ok = fileContentT["dataPath"]
@@ -554,6 +589,7 @@ func Svc() {
 	logWithTime("Using config file: %v", cfgFileNameT)
 
 	go startHttpServer(currentPortG)
+	go startHttpsServer(currentSslPortG)
 
 }
 
