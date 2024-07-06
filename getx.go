@@ -467,13 +467,13 @@ func doApi(resA http.ResponseWriter, reqA *http.Request) string {
 func startHttpServer(portA string) {
 	logWithTime("starting http server on port %v...", portA)
 	// logWithTime("https port: %v", portA)
-	http.HandleFunc("/api", HttpApiHandler)
-	http.HandleFunc("/share/", shareHandler)
-	http.HandleFunc("/code/", codeHandler)
-	http.HandleFunc("/md/", mdHandler)
+	// http.HandleFunc("/api", HttpApiHandler)
+	// http.HandleFunc("/share/", shareHandler)
+	// http.HandleFunc("/code/", codeHandler)
+	// http.HandleFunc("/md/", mdHandler)
 
-	http.HandleFunc("/", HttpHandler)
-	// s := &http.Server{
+	// http.HandleFunc("/", HttpHandler)
+	// // s := &http.Server{
 	// 	Addr:           ":"+portA,
 	// 	Handler:        HttpApiHandler,
 	// 	ReadTimeout:    10 * time.Second,
@@ -495,12 +495,12 @@ func startHttpServer(portA string) {
 func startHttpsServer(portA string) {
 	logWithTime("starting https server on port %v...", portA)
 	// logWithTime("https port: %v", portA)
-	http.HandleFunc("/api", HttpApiHandler)
-	http.HandleFunc("/share/", shareHandler)
-	http.HandleFunc("/code/", codeHandler)
-	http.HandleFunc("/md/", mdHandler)
+	// http.HandleFunc("/api", HttpApiHandler)
+	// http.HandleFunc("/share/", shareHandler)
+	// http.HandleFunc("/code/", codeHandler)
+	// http.HandleFunc("/md/", mdHandler)
 
-	http.HandleFunc("/", HttpHandler)
+	// http.HandleFunc("/", HttpHandler)
 	// s := &http.Server{
 	// 	Addr:           ":"+portA,
 	// 	Handler:        HttpApiHandler,
@@ -587,6 +587,14 @@ func Svc() {
 
 	logWithTime("Service started.")
 	logWithTime("Using config file: %v", cfgFileNameT)
+
+	http.HandleFunc("/api", HttpApiHandler)
+	http.HandleFunc("/share/", shareHandler)
+	http.HandleFunc("/code/", codeHandler)
+	http.HandleFunc("/md/", mdHandler)
+
+	http.HandleFunc("/", HttpHandler)
+	// s := &http.Server{
 
 	go startHttpServer(currentPortG)
 	go startHttpsServer(currentSslPortG)
