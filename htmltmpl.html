@@ -13,9 +13,9 @@
 		<center>
 			<div><span style="color: #9d080c; font-size: 2.0em; font-weight: bold;">getx</span></div>
 			<div id="resultDiv" style="margin-top: 0.6em; font-size: 0.6em;">{{.RESULTMSG}}</div>
-			<form action="/" method="POST">
+			<form id="mainForm" action="/" method="POST">
 				<div style="margin-top: 0.1em;"><input type="submit" name="req" value="load"
-						style="font-size: 1.2em;">&nbsp;&nbsp;<input type="submit" name="req" value="save"
+						style="font-size: 1.2em;">&nbsp;&nbsp;<input id="saveButton" type="submit" name="req" value="save"
 						style="font-size: 1.2em;">
 				</div>
 				<div style="margin-top: 0.8em;"><span>Code: </span><input id="codeID" name="code"
@@ -41,6 +41,14 @@
 	</div>
 
 	<script>
+		function saveText() {
+			var rs = confirm("Are you sure to save?");
+
+			if (rs) {
+				document.getElementById("saveButton").click();
+			}
+		}
+
 		//获取粘贴板上的图片
 		function setPasteImg() {
 			//粘贴事件
