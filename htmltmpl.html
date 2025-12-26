@@ -6,41 +6,7 @@
 	<title>GetX</title>
 	<style>
 	</style>
-</head>
-
-<body>
-	<div style="width: 100%; font-size: 1.8em;">
-		<center>
-			<div><span style="color: #9d080c; font-size: 2.0em; font-weight: bold;">getx</span></div>
-			<div id="resultDiv" style="margin-top: 0.6em; font-size: 0.6em;">{{.RESULTMSG}}</div>
-			<form id="mainForm" action="/" method="POST">
-				<div style="margin-top: 0.1em;"><input type="submit" name="req" value="load"
-						style="font-size: 1.2em;">&nbsp;&nbsp;<input id="saveButton" type="submit" name="req" value="save"
-						style="font-size: 1.2em;">
-				</div>
-				<div style="margin-top: 0.8em;"><span>Code: </span><input id="codeID" name="code"
-						style="width: 20.0em; font-size: 1.1em;" value="{{.CODE}}"></div>
-				<div style="margin-top: 0.8em; width: 90%; max-width: 30.0em;"><textarea id="textAreaID" name="text"
-						style="font-size: 1.0em; width: 80%; height: 60vh;" value="">{{.TEXT}}</textarea></div>
-				<input id="mainImgInput" type="hidden" name="mainImg" value=""> </input>
-			</form>
-			<div style="margin-top: 20px; font-size: 0.8em;">
-				<img id="mainImg" src="{{.MAINIMG}}" alt="">
-			</div>
-			<div style="margin-top: 20px; font-size: 0.8em;"><a target="_blank"
-					href="http://getx.topget.org/pub/getx/">Download command-line tool (Windows,
-					MacOS, Linux)</a></div>
-			<div style="margin-top: 10px; font-size: 0.8em;">
-				<p>Usage: </p>
-				<p>getx save -code=123 -text="mytext"</p>
-				<p>getx save -code=123 -file=c:\test.txt</p>
-				<p>getx save -code=123 <span style="color: #888888;">(from clipboard)</span></p>
-				<p>getx get -code=123</p>
-			</div>
-		</center>
-	</div>
-
-	<script>
+    <script>
 		function saveText() {
 			var rs = confirm("Are you sure to save?");
 
@@ -78,9 +44,63 @@
 
 		}
 
-		setPasteImg();
+		window.onload = function() {
+            document.onkeydown = function(e) {
+                if (e.ctrlKey) {
+                    if (e.keyCode == 83) {
+//                        console.log("ctrl-s");
+                        saveText();
+                        // e.stopPropagation(); 
+                        e.preventDefault(); 
+                        e.returnValue = false;
+    
+                        return false;
+                    }
+    
+                    return true;
+                } 
+    
+                return true;
+            };  
 
-	</script>
-</body>
+			setPasteImg();
+
+      }    
+    </script>
+</head>
+
+<body>
+	<div style="width: 100%; font-size: 1.8em;">
+		<center>
+			<div><span style="color: #9d080c; font-size: 2.0em; font-weight: bold;">getx</span></div>
+			<div id="resultDiv" style="margin-top: 0.6em; font-size: 0.6em;">{{.RESULTMSG}}</div>
+			<form id="mainForm" action="/" method="POST">
+				<div style="margin-top: 0.1em;"><input type="submit" name="req" value="load"
+						style="font-size: 1.2em;">&nbsp;&nbsp;<input id="saveButton" type="submit" name="req" value="save"
+						style="font-size: 1.2em;">
+				</div>
+				<div style="margin-top: 0.8em;"><span>Code: </span><input id="codeID" name="code"
+						style="width: 20.0em; font-size: 1.1em;" value="{{.CODE}}"></div>
+				<div style="margin-top: 0.8em; width: 90%; max-width: 30.0em;"><textarea id="textAreaID" name="text"
+						style="font-size: 1.0em; width: 80%; height: 60vh;" value="">{{.TEXT}}</textarea></div>
+				<input id="mainImgInput" type="hidden" name="mainImg" value=""> </input>
+			</form>
+			<div style="margin-top: 20px; font-size: 0.8em;">
+				<img id="mainImg" src="{{.MAINIMG}}" alt="">
+			</div>
+			<div style="margin-top: 20px; font-size: 0.8em;"><a target="_blank"
+					href="http://getx.topget.org/pub/getx/">Download command-line tool (Windows,
+					MacOS, Linux)</a></div>
+			<div style="margin-top: 10px; font-size: 0.8em;">
+				<p>Usage: </p>
+				<p>getx save -code=123 -text="mytext"</p>
+				<p>getx save -code=123 -file=c:\test.txt</p>
+				<p>getx save -code=123 <span style="color: #888888;">(from clipboard)</span></p>
+				<p>getx get -code=123</p>
+			</div>
+		</center>
+	</div>
+
+/body>
 
 </html>
